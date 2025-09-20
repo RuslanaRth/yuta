@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,7 +46,8 @@ body {
 #start-screen {
     position: absolute; top:0; left:0; width:100%; height:100%;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
-    background: rgba(0,0,0,0.7); color: white; z-index: 20;
+    background: #000000; /* черный фон */
+    color: white; z-index: 20;
 }
 h1 { font-size: 36px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 button {
@@ -66,17 +67,17 @@ button:hover { transform: scale(1.05); }
 <body>
 <div id="game-container">
     <canvas id="game-canvas"></canvas>
-    <div id="score-display">Счет: 0</div>
-    <div class="emotion-indicator" id="emotion-indicator">Эмоция: Обычная</div>
+    <div id="score-display">スコア: 0</div>
+    <div class="emotion-indicator" id="emotion-indicator">感情: 普通</div>
     <div id="controls">
         <div class="control-btn" id="left-btn">←</div>
         <div class="control-btn" id="right-btn">→</div>
     </div>
     <div id="start-screen">
         <h1>Dodge Game</h1>
-        <p>Ловите еду, избегайте лимонов и перца!</p>
-        <p>Игра бесконечная - получайте эмоции!</p>
-        <button id="start-btn">Начать игру</button>
+        <p>食べ物をキャッチして、レモンや唐辛子を避けよう！</p>
+        <p>無限ゲーム - 感情をゲット！</p>
+        <button id="start-btn">ゲーム開始</button>
     </div>
 </div>
 
@@ -96,10 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let gameRunning = false;
     let score = 0;
-    let characterX = canvas.width / 2 - 35;
-    let characterY = canvas.height - 150;
-    const characterWidth = 70;
-    const characterHeight = 90;
+    let characterX = canvas.width / 2 - 70; // персонаж в 2 раза шире
+    let characterY = canvas.height - 300;   // высота увеличена
+    const characterWidth = 140; // увеличена в 2 раза
+    const characterHeight = 180; // увеличена в 2 раза
     let characterDirection = 1;
     let moveDirection = 0;
     let characterEmotion = 'idle';
@@ -111,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const goodItems = ['onigiri','taco','rolly','moti','beer'];
     const badItems = ['pepper','lemon'];
 
-    // Загрузка изображений из корня репозитория
     const images = {};
     function loadImages() {
         const imageSources = {
@@ -140,19 +140,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!gameRunning) return;
         const isGood = Math.random() > 0.3;
         const type = isGood ? goodItems[Math.floor(Math.random()*goodItems.length)] : badItems[Math.floor(Math.random()*badItems.length)];
-        items.push({x: Math.random()*(canvas.width-40), y:-50, type:type, width:40, height:40, speed:2+Math.random()*3});
-        setTimeout(generateItem, 500+Math.random()*1500);
+        // уменьшил скорость падающих предметов
+        items.push({x: Math.random()*(canvas.width-40), y:-50, type:type, width:40, height:40, speed:1 + Math.random()*2});
+        setTimeout(generateItem, 700+Math.random()*1300);
     }
 
     function setEmotion(emotion, duration=1000) {
         characterEmotion = emotion;
-        if (emotion === 'tasty') emotionIndicator.textContent = 'Эмоция: Вкусно!';
-        else if (emotion === 'kissly') emotionIndicator.textContent = 'Эмоция: Пфу!';
-        else emotionIndicator.textContent = 'Эмоция: Обычная';
+        if (emotion === 'tasty') emotionIndicator.textContent = '感情: 美味しい！';
+        else if (emotion === 'kissly') emotionIndicator.textContent = '感情: うっ！';
+        else emotionIndicator.textContent = '感情: 普通';
         if (emotionTimeout) clearTimeout(emotionTimeout);
         emotionTimeout = setTimeout(()=>{
             characterEmotion='idle';
-            emotionIndicator.textContent='Эмоция: Обычная';
+            emotionIndicator.textContent='感情: 普通';
         }, duration);
     }
 
@@ -173,8 +174,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (item.y > canvas.height) items.splice(i,1);
         }
 
-        // Перемещение персонажа
-        characterX += moveDirection * 10;
+        // Перемещение персонажа (уменьшено до 5px)
+        characterX += moveDirection * 5;
         if (characterX < 0) characterX = 0;
         if (characterX > canvas.width - characterWidth) characterX = canvas.width - characterWidth;
 
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (characterEmotion==='kissly' && images.kissly.complete) characterImage=images.kissly;
         else if (moveDirection!==0){
             if (timestamp - lastTimestamp > 200) { walkAnimationFrame = walkAnimationFrame===1?2:1; lastTimestamp=timestamp; }
-            characterImage = walkAnimationFrame===1?images.walk1:images.walk2;
+            characterImage = characterDirection===1 ? images.walk1 : images.walk2; // исправил инверсию
         } else {
             if (timestamp - lastTimestamp > 500) { walkAnimationFrame = walkAnimationFrame===1?2:1; lastTimestamp=timestamp; }
             characterImage = walkAnimationFrame===1?images.idle1:images.idle2;
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.restore();
         }
 
-        scoreDisplay.textContent=`Счет: ${score}`;
+        scoreDisplay.textContent=`スコア: ${score}`;
         requestAnimationFrame(draw);
     }
 
@@ -242,4 +243,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 </body>
-</html>               
+</html>
