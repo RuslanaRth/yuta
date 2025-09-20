@@ -134,6 +134,29 @@
         
         <div id="score-display">Счет: 0</div>
         <div class="emotion-indicator" id="emotion-indicator">Эмоция: Обычная</div>
+        // Генерация предметов  
+        <div id="controls">
+                                  function generateItem() {
+                if (!gameRunning) return;
+                
+                const isGood = Math.random() > 0.3;
+                const itemType = isGood ? 
+                    goodItems[Math.floor(Math.random() * goodItems.length)] : 
+                    badItems[Math.floor(Math.random() * badItems.length)];
+                
+                const item = {
+                    x: Math.random() * (canvas.width - 40),
+                    y: -50,
+                    type: itemType,
+                    width: 40,
+                    height: 40,
+                    speed: 2 + Math.random() * 3
+                };
+                
+                items.push(item);
+                
+                setTimeout(generateItem, 500 + Math.random() * 1500);
+            }
       <div class="control-btn" id="right-btn">→</div>
         </div>
         
@@ -213,30 +236,6 @@
                         }
                     };
                 }
-            }
-            
-            // Генерация предметов  
-        <div id="controls">
-                                  function generateItem() {
-                if (!gameRunning) return;
-                
-                const isGood = Math.random() > 0.3;
-                const itemType = isGood ? 
-                    goodItems[Math.floor(Math.random() * goodItems.length)] : 
-                    badItems[Math.floor(Math.random() * badItems.length)];
-                
-                const item = {
-                    x: Math.random() * (canvas.width - 40),
-                    y: -50,
-                    type: itemType,
-                    width: 40,
-                    height: 40,
-                    speed: 2 + Math.random() * 3
-                };
-                
-                items.push(item);
-                
-                setTimeout(generateItem, 500 + Math.random() * 1500);
             }
             
             // Установка эмоции
@@ -412,3 +411,4 @@
 </body>
 </html>
             <div class="control-btn" id="left-btn">←</div>
+
