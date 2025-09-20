@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodge Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #6a11cb, #2575fc);
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 360px;
+            height: 640px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        #game-canvas {
+            background-color: #7B68EE;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 10;
+        }
+        
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            z-index: 20;
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        .item {
+            position: absolute;
+            transition: transform 0.2s;
+        }
+        
+        #character {
+            position: absolute;
+            bottom: 100px;
+            left: 160px;
+            transition: transform 0.2s;
+            z-index: 5;
+        }
+        
+        .emotion-indicator {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            font-size: 16px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+        }
+</style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="score-display">Счет: 0</div>
+        <div class="emotion-indicator" id="emotion-indicator">Эмоция: Обычная</div>
+        
+        <div id="controls">
+            <div class="control-btn" id="left-btn">←</div>
+            <div class="control-btn" id="right-btn">→</div>
+        </div>
+        
+        <div id="start-screen">
+            <h1>Dodge Game</h1>
+            <p>Ловите еду, избегайте лимонов и перца!</p>
+            <p>Игра бесконечная - получайте эмоции!</p>
+            <button id="start-btn">Начать игру</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            const startScreen = document.getElementById('start-screen');
+            const scoreDisplay = document.getElementById('score-display');
+            const emotionIndicator = document.getElementById('emotion-indicator');
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+            const startBtn = document.getElementById('start-btn');
+            
+            // Установка размеров canvas
+            canvas.width = 360;
+            canvas.height = 640;
+            
+            // Переменные игры
+            let gameRunning = false;
+            let score = 0;
+            let characterX = canvas.width / 2;
+            let characterY = canvas.height - 150;
+            let characterWidth = 70;
+            let characterHeight = 90;
+            let characterDirection = 1; // 1 - вправо, -1 - влево
+            let characterEmotion = 'idle';
+            let characterMoving = false;
+            let walkAnimationFrame = 1;
+            let lastTimestamp = 0;
+            let emotionTimeout = null;
+            
+            // Массивы для предметов
+            let items = [];
+            let goodItems = ['onigiri', 'taco', 'rolly', 'moti', 'beer'];
+            let badItems = ['pepper', 'lemon'];
+            
+            // Загрузка изображений
+            const images = {};
+            
+            function loadImages() {
+                const imageSources = {
+                    backf: 'https://placehold.co/360x640/7B68EE/FFFFFF?text=Game+Background',
+                    idle1: 'https://placehold.co/70x90/FF6B6B/FFFFFF?text=Idle1',
+                    idle2: 'https://placehold.co/70x90/FF6B6B/FFFFFF?text=Idle2',
+                    walk1: 'https://placehold.co/70x90/4ECDC4/FFFFFF?text=Walk1',
+                    walk2: 'https://placehold.co/70x90/4ECDC4/FFFFFF?text=Walk2',
+                    tasty: 'https://placehold.co/70x90/FFD166/FFFFFF?text=Tasty',
+                    kissly: 'https://placehold.co/70x90/FF6B6B/FFFFFF?text=Kissly',
+                    onigiri: 'https://placehold.co/40x40/06D6A0/FFFFFF?text=Onigiri',
+                    taco: 'https://placehold.co/40x40/06D6A0/FFFFFF?text=Taco',
+                    rolly: 'https://placehold.co/40x40/06D6A0/FFFFFF?text=Rolly',
+                    moti: 'https://placehold.co/40x40/06D6A0/FFFFFF?text=Moti',
+                    beer: 'https://placehold.co/40x40/06D6A0/FFFFFF?text=Beer',
+                    pepper: 'https://placehold.co/40x40/EF476F/FFFFFF?text=Pepper',
+                    lemon: 'https://placehold.co/40x40/EF476F/FFFFFF?text=Lemon'
+                };
+                
+                let loadedImages = 0;
+                const totalImages = Object.keys(imageSources).length;
+                
+                for (const key in imageSources) {
+                    images[key] = new Image();
+                    images[key].src = imageSources[key];
+images[key].onload = () => {
+                        loadedImages++;
+                        if (loadedImages === totalImages) {
+                            console.log('Все изображения загружены');
+                        }
+                    };
+                }
+            }
+            
+            // Генерация предметов
+            function generateItem() {
+                if (!gameRunning) return;
+                
+                const isGood = Math.random() > 0.3;
+                const itemType = isGood ? 
+                    goodItems[Math.floor(Math.random() * goodItems.length)] : 
+                    badItems[Math.floor(Math.random() * badItems.length)];
+                
+                const item = {
+                    x: Math.random() * (canvas.width - 40),
+                    y: -50,
+                    type: itemType,
+                    width: 40,
+                    height: 40,
+                    speed: 2 + Math.random() * 3
+                };
+                
+                items.push(item);
+                
+                // Следующий предмет через случайное время
+                setTimeout(generateItem, 500 + Math.random() * 1500);
+            }
+            
+            // Установка эмоции на время
+            function setEmotion(emotion, duration = 1000) {
+                characterEmotion = emotion;
+                
+                // Обновляем индикатор эмоций
+                if (emotion === 'tasty') {
+                    emotionIndicator.textContent = 'Эмоция: Вкусно!';
+                } else if (emotion === 'kissly') {
+                    emotionIndicator.textContent = 'Эмоция: Пфу!';
+                } else {
+                    emotionIndicator.textContent = 'Эмоция: Обычная';
+                }
+                
+                // Очищаем предыдущий таймаут
+                if (emotionTimeout) {
+                    clearTimeout(emotionTimeout);
+                }
+                
+                // Устанавливаем возврат к обычной эмоции
+                emotionTimeout = setTimeout(() => {
+                    characterEmotion = 'idle';
+                    emotionIndicator.textContent = 'Эмоция: Обычная';
+                }, duration);
+            }
+            
+            // Отрисовка игры
+            function draw(timestamp) {
+                if (!gameRunning) return;
+                
+                // Очистка canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Рисуем фон
+                if (images.backf.complete) {
+                    ctx.drawImage(images.backf, 0, 0, canvas.width, canvas.height);
+                }
+                
+                // Рисуем предметы
+                items.forEach((item, index) => {
+                    item.y += item.speed;
+                    
+                    if (images[item.type].complete) {
+                        ctx.drawImage(images[item.type], item.x, item.y, item.width, item.height);
+                    }
+                    
+                    // Проверка столкновений
+                    if (
+                        item.x < characterX + characterWidth - 20 &&
+                        item.x + item.width > characterX + 20 &&
+                        item.y < characterY + characterHeight - 20 &&
+                        item.y + item.height > characterY + 20
+                    ) {
+                        if (goodItems.includes(item.type)) {
+                            // Ловля хорошего предмета
+                            score += 10;
+                            setEmotion('tasty', 1000);
+                        } else {
+                            // Столкновение с плохим предметом
+                            setEmotion('kissly', 1500);
+                        }
+items.splice(index, 1);
+                    }
+                    
+                    // Удаление предметов, упавших за экран
+                    if (item.y > canvas.height) {
+                        items.splice(index, 1);
+                    }
+                });
+                
+                // Рисуем персонажа
+                let characterImage;
+                
+                if (characterEmotion === 'tasty' && images.tasty.complete) {
+                    characterImage = images.tasty;
+                } else if (characterEmotion === 'kissly' && images.kissly.complete) {
+                    characterImage = images.kissly;
+                } else if (characterMoving) {
+                    // Анимация ходьбы
+                    if (timestamp - lastTimestamp > 200) {
+                        walkAnimationFrame = walkAnimationFrame === 1 ? 2 : 1;
+                        lastTimestamp = timestamp;
+                    }
+                    characterImage = walkAnimationFrame === 1 ? images.walk1 : images.walk2;
+                } else {
+                    // Анимация покоя
+                    if (timestamp - lastTimestamp > 500) {
+                        walkAnimationFrame = walkAnimationFrame === 1 ? 2 : 1;
+                        lastTimestamp = timestamp;
+                    }
+                    characterImage = walkAnimationFrame === 1 ? images.idle1 : images.idle2;
+                }
+                
+                if (characterImage && characterImage.complete) {
+                    // Применяем инверсию, если персонаж движется влево
+                    ctx.save();
+                    if (characterDirection === -1) {
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(characterImage, -characterX - characterWidth, characterY, characterWidth, characterHeight);
+                    } else {
+                        ctx.drawImage(characterImage, characterX, characterY, characterWidth, characterHeight);
+                    }
+                    ctx.restore();
+                }
+                
+                // Обновляем счет
+                scoreDisplay.textContent = Счет: ${score};
+                
+                // Продолжаем анимацию
+                requestAnimationFrame(draw);
+            }
+            
+            // Управление движением
+            function setupControls() {
+                let moveInterval;
+                
+                function startMoving(direction) {
+                    characterMoving = true;
+                    characterDirection = direction;
+                    
+                    if (moveInterval) clearInterval(moveInterval);
+                    
+                    moveInterval = setInterval(() => {
+                        characterX += direction * 10;
+                        
+                        // Ограничение движения в пределах canvas
+                        if (characterX < 0) characterX = 0;
+                        if (characterX > canvas.width - characterWidth) characterX = canvas.width - characterWidth;
+                    }, 50);
+                }
+                
+                function stopMoving() {
+                    characterMoving = false;
+                    if (moveInterval) {
+                        clearInterval(moveInterval);
+                        moveInterval = null;
+                    }
+                }
+                
+                // Кнопки управления
+                leftBtn.addEventListener('touchstart', () => startMoving(-1));
+                leftBtn.addEventListener('touchend', stopMoving);
+                leftBtn.addEventListener('touchcancel', stopMoving);
+                
+                rightBtn.addEventListener('touchstart', () => startMoving(1));
+                rightBtn.addEventListener('touchend', stopMoving);
+rightBtn.addEventListener('touchcancel', stopMoving);
+                
+                // Управление с клавиатуры
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft') startMoving(-1);
+                    if (e.key === 'ArrowRight') startMoving(1);
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopMoving();
+                });
+            }
+            
+            // Начало игры
+            function startGame() {
+                startScreen.style.display = 'none';
+                gameRunning = true;
+                score = 0;
+                items = [];
+                characterX = canvas.width / 2 - characterWidth / 2;
+                setEmotion('idle');
+                
+                generateItem();
+                requestAnimationFrame(draw);
+            }
+            
+            // Инициализация игры
+            function init() {
+                loadImages();
+                setupControls();
+                
+                startBtn.addEventListener('click', startGame);
+            }
+            
+            init();
+        });
+    </script>
+</body>
+</html>
