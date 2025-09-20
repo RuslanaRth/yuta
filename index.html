@@ -115,19 +115,6 @@
             transform: scale(1.05);
         }
         
-        .item {
-            position: absolute;
-            transition: transform 0.2s;
-        }
-        
-        #character {
-            position: absolute;
-            bottom: 100px;
-            left: 160px;
-            transition: transform 0.2s;
-            z-index: 5;
-        }
-        
         .emotion-indicator {
             position: absolute;
             top: 60px;
@@ -139,7 +126,7 @@
             padding: 5px 10px;
             border-radius: 10px;
         }
-</style>
+    </style>
 </head>
 <body>
     <div id="game-container">
@@ -147,10 +134,7 @@
         
         <div id="score-display">Счет: 0</div>
         <div class="emotion-indicator" id="emotion-indicator">Эмоция: Обычная</div>
-        
-        <div id="controls">
-            <div class="control-btn" id="left-btn">←</div>
-            <div class="control-btn" id="right-btn">→</div>
+      <div class="control-btn" id="right-btn">→</div>
         </div>
         
         <div id="start-screen">
@@ -183,7 +167,7 @@
             let characterY = canvas.height - 150;
             let characterWidth = 70;
             let characterHeight = 90;
-            let characterDirection = 1; // 1 - вправо, -1 - влево
+            let characterDirection = 1;
             let characterEmotion = 'idle';
             let characterMoving = false;
             let walkAnimationFrame = 1;
@@ -222,7 +206,7 @@
                 for (const key in imageSources) {
                     images[key] = new Image();
                     images[key].src = imageSources[key];
-images[key].onload = () => {
+                    images[key].onload = () => {
                         loadedImages++;
                         if (loadedImages === totalImages) {
                             console.log('Все изображения загружены');
@@ -231,8 +215,9 @@ images[key].onload = () => {
                 }
             }
             
-            // Генерация предметов
-            function generateItem() {
+            // Генерация предметов  
+        <div id="controls">
+                                  function generateItem() {
                 if (!gameRunning) return;
                 
                 const isGood = Math.random() > 0.3;
@@ -251,15 +236,13 @@ images[key].onload = () => {
                 
                 items.push(item);
                 
-                // Следующий предмет через случайное время
                 setTimeout(generateItem, 500 + Math.random() * 1500);
             }
             
-            // Установка эмоции на время
+            // Установка эмоции
             function setEmotion(emotion, duration = 1000) {
                 characterEmotion = emotion;
                 
-                // Обновляем индикатор эмоций
                 if (emotion === 'tasty') {
                     emotionIndicator.textContent = 'Эмоция: Вкусно!';
                 } else if (emotion === 'kissly') {
@@ -268,12 +251,10 @@ images[key].onload = () => {
                     emotionIndicator.textContent = 'Эмоция: Обычная';
                 }
                 
-                // Очищаем предыдущий таймаут
                 if (emotionTimeout) {
                     clearTimeout(emotionTimeout);
                 }
                 
-                // Устанавливаем возврат к обычной эмоции
                 emotionTimeout = setTimeout(() => {
                     characterEmotion = 'idle';
                     emotionIndicator.textContent = 'Эмоция: Обычная';
@@ -284,15 +265,12 @@ images[key].onload = () => {
             function draw(timestamp) {
                 if (!gameRunning) return;
                 
-                // Очистка canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                // Рисуем фон
                 if (images.backf.complete) {
                     ctx.drawImage(images.backf, 0, 0, canvas.width, canvas.height);
                 }
                 
-                // Рисуем предметы
                 items.forEach((item, index) => {
                     item.y += item.speed;
                     
@@ -300,7 +278,6 @@ images[key].onload = () => {
                         ctx.drawImage(images[item.type], item.x, item.y, item.width, item.height);
                     }
                     
-                    // Проверка столкновений
                     if (
                         item.x < characterX + characterWidth - 20 &&
                         item.x + item.width > characterX + 20 &&
@@ -308,23 +285,20 @@ images[key].onload = () => {
                         item.y + item.height > characterY + 20
                     ) {
                         if (goodItems.includes(item.type)) {
-                            // Ловля хорошего предмета
                             score += 10;
                             setEmotion('tasty', 1000);
                         } else {
-                            // Столкновение с плохим предметом
                             setEmotion('kissly', 1500);
                         }
-items.splice(index, 1);
+                        
+                        items.splice(index, 1);
                     }
                     
-                    // Удаление предметов, упавших за экран
                     if (item.y > canvas.height) {
                         items.splice(index, 1);
                     }
                 });
                 
-                // Рисуем персонажа
                 let characterImage;
                 
                 if (characterEmotion === 'tasty' && images.tasty.complete) {
@@ -332,14 +306,12 @@ items.splice(index, 1);
                 } else if (characterEmotion === 'kissly' && images.kissly.complete) {
                     characterImage = images.kissly;
                 } else if (characterMoving) {
-                    // Анимация ходьбы
                     if (timestamp - lastTimestamp > 200) {
                         walkAnimationFrame = walkAnimationFrame === 1 ? 2 : 1;
                         lastTimestamp = timestamp;
                     }
-                    characterImage = walkAnimationFrame === 1 ? images.walk1 : images.walk2;
+                        characterImage = walkAnimationFrame === 1 ? images.walk1 : images.walk2;
                 } else {
-                    // Анимация покоя
                     if (timestamp - lastTimestamp > 500) {
                         walkAnimationFrame = walkAnimationFrame === 1 ? 2 : 1;
                         lastTimestamp = timestamp;
@@ -348,7 +320,6 @@ items.splice(index, 1);
                 }
                 
                 if (characterImage && characterImage.complete) {
-                    // Применяем инверсию, если персонаж движется влево
                     ctx.save();
                     if (characterDirection === -1) {
                         ctx.scale(-1, 1);
@@ -359,10 +330,7 @@ items.splice(index, 1);
                     ctx.restore();
                 }
                 
-                // Обновляем счет
                 scoreDisplay.textContent = Счет: ${score};
-                
-                // Продолжаем анимацию
                 requestAnimationFrame(draw);
             }
             
@@ -379,7 +347,6 @@ items.splice(index, 1);
                     moveInterval = setInterval(() => {
                         characterX += direction * 10;
                         
-                        // Ограничение движения в пределах canvas
                         if (characterX < 0) characterX = 0;
                         if (characterX > canvas.width - characterWidth) characterX = canvas.width - characterWidth;
                     }, 50);
@@ -393,16 +360,14 @@ items.splice(index, 1);
                     }
                 }
                 
-                // Кнопки управления
                 leftBtn.addEventListener('touchstart', () => startMoving(-1));
                 leftBtn.addEventListener('touchend', stopMoving);
                 leftBtn.addEventListener('touchcancel', stopMoving);
                 
                 rightBtn.addEventListener('touchstart', () => startMoving(1));
                 rightBtn.addEventListener('touchend', stopMoving);
-rightBtn.addEventListener('touchcancel', stopMoving);
+                rightBtn.addEventListener('touchcancel', stopMoving);
                 
-                // Управление с клавиатуры
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowLeft') startMoving(-1);
                     if (e.key === 'ArrowRight') startMoving(1);
@@ -431,7 +396,14 @@ rightBtn.addEventListener('touchcancel', stopMoving);
                 loadImages();
                 setupControls();
                 
+                // ДОБАВЛЕНО: Обработчик клика для кнопки старта
                 startBtn.addEventListener('click', startGame);
+                
+                // ДОБАВЛЕНО: Обработчик касания для мобильных устройств
+                startBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    startGame();
+                });
             }
             
             init();
@@ -439,3 +411,4 @@ rightBtn.addEventListener('touchcancel', stopMoving);
     </script>
 </body>
 </html>
+            <div class="control-btn" id="left-btn">←</div>
