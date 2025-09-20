@@ -21,7 +21,7 @@ body {
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
-#game-canvas { background-color: #7B68EE; width: 100%; height: 100%; }
+#game-canvas { width: 100%; height: 100%; display:block; }
 #score-display {
     position: absolute; top: 20px; left: 20px;
     font-size: 24px; color: white;
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let characterY = canvas.height - 300;
     const characterWidth = 140;
     const characterHeight = 180;
-    let characterDirection = 1;
+    let characterDirection = -1; // -1 = влево (оригинал), 1 = вправо (зеркало)
     let moveDirection = 0;
     let characterEmotion = 'idle';
     let walkAnimationFrame = 1;
@@ -140,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!gameRunning) return;
         const isGood = Math.random() > 0.3;
         const type = isGood ? goodItems[Math.floor(Math.random()*goodItems.length)] : badItems[Math.floor(Math.random()*badItems.length)];
-        // еда падает быстрее
         items.push({x: Math.random()*(canvas.width-40), y:-50, type:type, width:40, height:40, speed:2 + Math.random()*3});
         setTimeout(generateItem, 700+Math.random()*1300);
     }
@@ -162,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.clearRect(0,0,canvas.width,canvas.height);
         if (images.backf.complete) ctx.drawImage(images.backf,0,0,canvas.width,canvas.height);
 
+        // еда
         for (let i=items.length-1;i>=0;i--){
             let item = items[i];
             item.y += item.speed;
@@ -174,25 +174,32 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (item.y > canvas.height) items.splice(i,1);
         }
 
+        // движение
         characterX += moveDirection * 5;
         if (characterX < 0) characterX = 0;
         if (characterX > canvas.width - characterWidth) characterX = canvas.width - characterWidth;
 
+        // выбор спрайта
         let characterImage;
         if (characterEmotion==='tasty' && images.tasty.complete) characterImage=images.tasty;
         else if (characterEmotion==='kissly' && images.kissly.complete) characterImage=images.kissly;
         else if (moveDirection!==0){
             if (timestamp - lastTimestamp > 200) { walkAnimationFrame = walkAnimationFrame===1?2:1; lastTimestamp=timestamp; }
-            // ✅ исправлено: правильные спрайты для направления
-            characterImage = (characterDirection===1) ? images.walk2 : images.walk1;
+            characterImage = (walkAnimationFrame===1 ? images.walk1 : images.walk2);
         } else {
             if (timestamp - lastTimestamp > 500) { walkAnimationFrame = walkAnimationFrame===1?2:1; lastTimestamp=timestamp; }
-            characterImage = walkAnimationFrame===1?images.idle1:images.idle2;
+            characterImage = (walkAnimationFrame===1 ? images.idle1 : images.idle2);
         }
 
+        // рисуем с направлением
         if (characterImage && characterImage.complete){
             ctx.save();
-            ctx.drawImage(characterImage, characterX, characterY, characterWidth, characterHeight);
+            if (characterDirection === 1){ // вправо = зеркало
+                ctx.scale(-1,1);
+                ctx.drawImage(characterImage, -characterX-characterWidth, characterY, characterWidth, characterHeight);
+            } else { // влево = оригинал
+                ctx.drawImage(characterImage, characterX, characterY, characterWidth, characterHeight);
+            }
             ctx.restore();
         }
 
@@ -203,11 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupControls(){
         leftBtn.addEventListener('touchstart', e=>{e.preventDefault(); moveDirection=-1; characterDirection=-1;},{passive:false});
         leftBtn.addEventListener('touchend', ()=>{moveDirection=0;});
-        leftBtn.addEventListener('touchcancel', ()=>{moveDirection=0;});
-
         rightBtn.addEventListener('touchstart', e=>{e.preventDefault(); moveDirection=1; characterDirection=1;},{passive:false});
         rightBtn.addEventListener('touchend', ()=>{moveDirection=0;});
-        rightBtn.addEventListener('touchcancel', ()=>{moveDirection=0;});
 
         document.addEventListener('keydown', e=>{
             if (e.key==='ArrowLeft'){ moveDirection=-1; characterDirection=-1; }
