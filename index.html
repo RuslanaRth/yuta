@@ -74,7 +74,7 @@ button:hover { transform: scale(1.05); }
         <div class="control-btn" id="right-btn">→</div>
     </div>
     <div id="start-screen">
-        <h1>Dodge Game</h1>
+        <h1>何が美味しい？</h1>
         <p>食べ物をキャッチして、レモンや唐辛子を避けよう！</p>
         <p>無限ゲーム - 感情をゲット！</p>
         <button id="start-btn">ゲーム開始</button>
@@ -97,10 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let gameRunning = false;
     let score = 0;
-    let characterX = canvas.width / 2 - 70; // персонаж в 2 раза шире
-    let characterY = canvas.height - 300;   // высота увеличена
-    const characterWidth = 140; // увеличена в 2 раза
-    const characterHeight = 180; // увеличена в 2 раза
+    let characterX = canvas.width / 2 - 70;
+    let characterY = canvas.height - 300;
+    const characterWidth = 140;
+    const characterHeight = 180;
     let characterDirection = 1;
     let moveDirection = 0;
     let characterEmotion = 'idle';
@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!gameRunning) return;
         const isGood = Math.random() > 0.3;
         const type = isGood ? goodItems[Math.floor(Math.random()*goodItems.length)] : badItems[Math.floor(Math.random()*badItems.length)];
-        // уменьшил скорость падающих предметов
-        items.push({x: Math.random()*(canvas.width-40), y:-50, type:type, width:40, height:40, speed:1 + Math.random()*2});
+        // еда падает быстрее
+        items.push({x: Math.random()*(canvas.width-40), y:-50, type:type, width:40, height:40, speed:2 + Math.random()*3});
         setTimeout(generateItem, 700+Math.random()*1300);
     }
 
@@ -174,18 +174,17 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (item.y > canvas.height) items.splice(i,1);
         }
 
-        // Перемещение персонажа (уменьшено до 5px)
         characterX += moveDirection * 5;
         if (characterX < 0) characterX = 0;
         if (characterX > canvas.width - characterWidth) characterX = canvas.width - characterWidth;
 
-        // Анимация персонажа
         let characterImage;
         if (characterEmotion==='tasty' && images.tasty.complete) characterImage=images.tasty;
         else if (characterEmotion==='kissly' && images.kissly.complete) characterImage=images.kissly;
         else if (moveDirection!==0){
             if (timestamp - lastTimestamp > 200) { walkAnimationFrame = walkAnimationFrame===1?2:1; lastTimestamp=timestamp; }
-            characterImage = characterDirection===1 ? images.walk1 : images.walk2; // исправил инверсию
+            // ✅ исправлено: правильные спрайты для направления
+            characterImage = (characterDirection===1) ? images.walk2 : images.walk1;
         } else {
             if (timestamp - lastTimestamp > 500) { walkAnimationFrame = walkAnimationFrame===1?2:1; lastTimestamp=timestamp; }
             characterImage = walkAnimationFrame===1?images.idle1:images.idle2;
@@ -193,8 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (characterImage && characterImage.complete){
             ctx.save();
-            if (characterDirection===-1){ ctx.scale(-1,1); ctx.drawImage(characterImage,-characterX-characterWidth,characterY,characterWidth,characterHeight); }
-            else ctx.drawImage(characterImage,characterX,characterY,characterWidth,characterHeight);
+            ctx.drawImage(characterImage, characterX, characterY, characterWidth, characterHeight);
             ctx.restore();
         }
 
